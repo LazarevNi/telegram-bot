@@ -1,9 +1,15 @@
 import telebot
 import os
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
+
 load_dotenv()
 
-bot = telebot.TeleBot(os.getenv("TOKEN"))
+bot_token = os.getenv("TOKEN")
+
+if bot_token is None:
+    raise Exception("Bot token is not defined")
+
+bot = telebot.TeleBot(bot_token)
 
 
 @bot.message_handler(commands=['start'])
