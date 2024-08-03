@@ -32,39 +32,26 @@ def weather_command(message):
 
 
 @bot.message_handler(content_types=['text'])
-def weather(message):
-
-    try:
-        # получаем город из сообщения пользователя
-        city = message.text.lower()
-      # формируем запрос
-        url = 'https://api.openweathermap.org/data/2.5/weather?q='+city+f'&units=metric&lang=ru&appid={weather_token}'
-      # отправляем запрос на сервер и сразу получаем результат
-        weather_data = requests.get(url).json()
-      # получаем данные о температуре и о том, как она ощущается
-        temperature = round(weather_data['main']['temp'])
-        temperature_feels = round(weather_data['main']['feels_like'])
-      # формируем ответы
-        w_now = 'Сейчас в городе ' + city + ' ' + str(temperature) + ' °C'
-        w_feels = 'Ощущается как ' + str(temperature_feels) + ' °C'
-      # отправляем значения пользователю
-        bot.send_message(message.from_user.id, w_now)
-        bot.send_message(message.from_user.id, w_feels)
-
-    except Exception as ex:
-        print(ex)
-
-
-@bot.message_handler()
-def info(message):
-    if message.text.lower() == 'привет':
-        name = message.from_user.first_name
-        bot.send_message(message.chat.id, f"Привет, {name}!")
+def handle_text_message(message):
+    if message.text.lower() in ['привет', 'здравствуйте']:
+        bot.send_message(message.chat.id, f"Привет, {message.from_user.first_name}!")
     elif message.text.lower() == '/id':
-        user_id = message.from_user.id
-        bot.reply_to(message, user_id)
+        bot.reply_to(message, f"Ваш ID: {message.from_user.id}")
     else:
-        bot.send_message(message.chat.id, "Не знаю такой команды")
+        try:
+            city = message.text.strip()
+            url = f'https://api.openweathermap.org/data/2.5/weather?q={city}&units=metric&lang=ru&appid={weather_token}'
+            weather_data = requests.get(url).json()
+            temperature = round(weather_data['main']['temp'])
+            temperature_feels = round(weather_data['main']['feels_like'])
+            bot.send_message(message.chat.id, f"Сейчас в городе {city} {temperature} °C, ощущается как {temperature_feels} °C.")
+        except KeyError:
+            bot.send_message(message.chat.id, "Не удалось найти город. Проверьте правильность названия.")
+        except requests.exceptions.RequestException:
+            bot.send_message(message.chat.id, "Ошибка при подключении к серверу погоды. Попробуйте позже.")
+        except Exception as ex:
+            bot.send_message(message.chat.id, "Произошла ошибка. Попробуйте снова.")
+            print(ex)
 
 
 bot.polling(non_stop=True)
